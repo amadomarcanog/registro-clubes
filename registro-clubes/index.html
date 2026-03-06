@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema de Registro de Clubes</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#0a1628;--navy2:#112240;--blue:#1a3a6b;--gold:#c9a84c;--gold2:#f0c96b;--cream:#f7f3eb;--white:#ffffff;--gray:#8a99b3;--shadow:0 8px 32px rgba(10,22,40,0.18);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--navy);font-family:'Montserrat',sans-serif;color:var(--cream);min-height:100vh;background-image:radial-gradient(ellipse at 20% 10%,rgba(26,58,107,0.5) 0%,transparent 60%),radial-gradient(ellipse at 80% 90%,rgba(201,168,76,0.12) 0%,transparent 50%);}
+.app{max-width:1100px;margin:0 auto;padding:20px;}
+header{text-align:center;padding:40px 20px 30px;}
+header::before{content:'';display:block;width:80px;height:4px;background:linear-gradient(90deg,var(--gold),var(--gold2));margin:0 auto 20px;border-radius:2px;}
+header h1{font-size:2.4rem;font-weight:900;letter-spacing:-1px;color:var(--white);line-height:1.1;}
+header h1 span{color:var(--gold);}
+header p{font-family:'Crimson Pro',serif;font-style:italic;color:var(--gray);margin-top:8px;font-size:1.1rem;}
+.db-status{display:flex;align-items:center;justify-content:center;gap:8px;font-size:0.75rem;font-weight:600;letter-spacing:1px;padding:8px 16px;border-radius:20px;margin:0 auto 20px;width:fit-content;}
+.db-status.connecting{background:rgba(201,168,76,0.1);color:var(--gold2);border:1px solid rgba(201,168,76,0.2);}
+.db-status.connected{background:rgba(26,122,74,0.15);color:#4cd98a;border:1px solid rgba(26,122,74,0.3);}
+.db-status.error{background:rgba(192,57,43,0.15);color:#e74c3c;border:1px solid rgba(192,57,43,0.3);}
+.dot{width:8px;height:8px;border-radius:50%;background:currentColor;}
+.dot.pulse{animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.tabs{display:flex;gap:4px;background:var(--navy2);border-radius:14px;padding:6px;margin-bottom:30px;border:1px solid rgba(201,168,76,0.15);}
+.tab-btn{flex:1;padding:12px;border:none;background:transparent;color:var(--gray);font-family:'Montserrat',sans-serif;font-weight:600;font-size:0.85rem;cursor:pointer;border-radius:10px;transition:all 0.2s;letter-spacing:0.5px;}
+.tab-btn.active{background:linear-gradient(135deg,var(--blue),#1e4d8c);color:var(--gold2);box-shadow:0 4px 12px rgba(26,58,107,0.4);}
+.tab-btn:hover:not(.active){color:var(--cream);background:rgba(255,255,255,0.05);}
+.tab-btn.tab-locked::after{content:'🔒';font-size:0.7rem;margin-left:4px;}
+.panel{display:none;animation:fadeIn 0.3s ease;}
+.panel.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}
+.card{background:var(--navy2);border:1px solid rgba(201,168,76,0.15);border-radius:16px;padding:28px;margin-bottom:20px;box-shadow:var(--shadow);}
+.card-title{font-size:0.75rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:20px;display:flex;align-items:center;gap:10px;}
+.card-title::after{content:'';flex:1;height:1px;background:rgba(201,168,76,0.2);}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;}
+.form-group{display:flex;flex-direction:column;gap:6px;}
+label{font-size:0.75rem;font-weight:600;color:var(--gray);letter-spacing:0.5px;text-transform:uppercase;}
+input,select{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:11px 14px;color:var(--white);font-family:'Montserrat',sans-serif;font-size:0.9rem;transition:all 0.2s;outline:none;}
+input:focus,select:focus{border-color:var(--gold);background:rgba(201,168,76,0.06);box-shadow:0 0 0 3px rgba(201,168,76,0.1);}
+select option{background:var(--navy2);color:var(--white);}
+.members-list{margin-top:16px;}
+.member-row{display:grid;grid-template-columns:1fr 1.4fr auto auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);animation:slideIn 0.2s ease;}
+.member-row:last-child{border-bottom:none;}
+.member-cost{background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.25);border-radius:8px;padding:6px 12px;font-size:0.85rem;font-weight:700;color:var(--gold2);white-space:nowrap;text-align:center;}
+.btn{padding:12px 24px;border-radius:10px;border:none;font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.85rem;letter-spacing:0.5px;cursor:pointer;transition:all 0.2s;}
+.btn-primary{background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--navy);}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(201,168,76,0.3);}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none;box-shadow:none;}
+.btn-secondary{background:rgba(255,255,255,0.07);color:var(--cream);border:1px solid rgba(255,255,255,0.12);}
+.btn-secondary:hover{background:rgba(255,255,255,0.12);}
+.btn-success{background:linear-gradient(135deg,#1a7a4a,#22a863);color:white;}
+.btn-success:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(26,122,74,0.3);}
+.btn-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:20px;}
+.btn-remove{background:rgba(192,57,43,0.15);border:1px solid rgba(192,57,43,0.3);color:#e74c3c;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:0.8rem;font-weight:700;transition:all 0.2s;}
+.btn-remove:hover{background:rgba(192,57,43,0.3);}
+.btn-delete{background:rgba(192,57,43,0.15);border:1px solid rgba(192,57,43,0.35);color:#e74c3c;border-radius:8px;padding:7px 14px;font-size:0.8rem;font-weight:700;cursor:pointer;font-family:'Montserrat',sans-serif;transition:all 0.2s;}
+.btn-delete:hover{background:rgba(192,57,43,0.3);}
+.btn-approve{background:rgba(26,122,74,0.2);border:1px solid rgba(26,122,74,0.4);color:#4cd98a;border-radius:8px;padding:7px 14px;font-size:0.8rem;font-weight:700;cursor:pointer;font-family:'Montserrat',sans-serif;transition:all 0.2s;}
+.btn-approve:hover{background:rgba(26,122,74,0.35);}
+.btn-approve:disabled{opacity:0.5;cursor:default;}
+.total-bar{background:linear-gradient(135deg,var(--blue),#1e4d8c);border:1px solid rgba(201,168,76,0.3);border-radius:12px;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;margin-top:16px;}
+.total-label{font-size:0.8rem;font-weight:600;color:var(--gray);letter-spacing:1px;text-transform:uppercase;}
+.total-amount{font-size:1.6rem;font-weight:900;color:var(--gold2);}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.72rem;font-weight:700;letter-spacing:0.5px;}
+.badge-pending{background:rgba(201,168,76,0.15);color:var(--gold2);border:1px solid rgba(201,168,76,0.3);}
+.badge-approved{background:rgba(26,122,74,0.2);color:#4cd98a;border:1px solid rgba(26,122,74,0.4);}
+.code-box{background:rgba(201,168,76,0.08);border:2px dashed var(--gold);border-radius:12px;padding:20px;text-align:center;margin-top:16px;}
+.code-value{font-size:2rem;font-weight:900;letter-spacing:6px;color:var(--gold2);}
+.code-hint{font-size:0.75rem;color:var(--gray);margin-top:6px;}
+.inscription-card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:20px;margin-bottom:14px;transition:all 0.2s;}
+.inscription-card:hover{border-color:rgba(201,168,76,0.25);background:rgba(255,255,255,0.05);}
+.insc-header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:14px;}
+.insc-title{font-size:1rem;font-weight:700;color:var(--white);}
+.insc-meta{font-size:0.78rem;color:var(--gray);margin-top:3px;}
+.insc-members{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+.member-chip{background:rgba(255,255,255,0.07);border-radius:20px;padding:4px 12px;font-size:0.75rem;color:var(--cream);}
+.insc-footer{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-top:12px;}
+.insc-amount{font-weight:700;color:var(--gold2);font-size:1rem;}
+.code-search{display:flex;gap:10px;}
+.code-search input{flex:1;}
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px;}
+.stat-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:18px;text-align:center;}
+.stat-value{font-size:2rem;font-weight:900;color:var(--gold2);}
+.stat-label{font-size:0.72rem;color:var(--gray);margin-top:4px;letter-spacing:1px;text-transform:uppercase;}
+.empty{text-align:center;padding:40px;color:var(--gray);font-style:italic;}
+.alert{padding:12px 16px;border-radius:10px;font-size:0.85rem;font-weight:600;margin-bottom:16px;display:none;}
+.alert-success{background:rgba(26,122,74,0.2);border:1px solid rgba(26,122,74,0.4);color:#4cd98a;}
+.alert-error{background:rgba(192,57,43,0.2);border:1px solid rgba(192,57,43,0.4);color:#e74c3c;}
+.alert.show{display:block;animation:fadeIn 0.3s ease;}
+.lock-overlay{position:fixed;inset:0;background:rgba(10,22,40,0.97);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;}
+.lock-box{background:var(--navy2);border:1px solid rgba(201,168,76,0.3);border-radius:20px;padding:40px 36px;width:100%;max-width:380px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.5);}
+.lock-icon{font-size:2.8rem;margin-bottom:12px;}
+.lock-title{font-size:1.2rem;font-weight:900;color:var(--white);margin-bottom:4px;}
+.lock-subtitle{font-size:0.82rem;color:var(--gray);margin-bottom:24px;}
+.lock-input{width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:13px 16px;color:var(--white);font-family:'Montserrat',sans-serif;font-size:1rem;letter-spacing:3px;text-align:center;outline:none;margin-bottom:14px;transition:all 0.2s;}
+.lock-input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,0.12);}
+.lock-btn{width:100%;padding:13px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--navy);border:none;border-radius:10px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.9rem;cursor:pointer;}
+.lock-error{color:#e74c3c;font-size:0.8rem;margin-top:10px;display:none;}
+.lock-error.show{display:block;}
+.confirm-overlay{position:fixed;inset:0;background:rgba(10,22,40,0.97);z-index:1100;display:flex;align-items:center;justify-content:center;}
+.confirm-box{background:var(--navy2);border:1px solid rgba(192,57,43,0.4);border-radius:16px;padding:32px 28px;max-width:360px;width:100%;text-align:center;}
+.confirm-icon{font-size:2.4rem;margin-bottom:12px;}
+.confirm-title{font-size:1rem;font-weight:900;color:var(--white);margin-bottom:8px;}
+.confirm-desc{font-size:0.82rem;color:var(--gray);margin-bottom:24px;}
+.confirm-btns{display:flex;gap:10px;justify-content:center;}
+@media(max-width:600px){header h1{font-size:1.6rem;}.tabs{flex-direction:column;}.member-row{grid-template-columns:1fr 1fr;font-size:0.8rem;}}
+</style>
+</head>
+<body>
+<div class="lock-overlay" id="lockOverlay" style="display:none;">
+  <div class="lock-box">
+    <div class="lock-icon">🔐</div>
+    <div class="lock-title">Acceso Restringido</div>
+    <div class="lock-subtitle" id="lockSubtitle">Ingresa la clave para continuar</div>
+    <input type="password" class="lock-input" id="lockInput" placeholder="••••••••" onkeydown="if(event.key==='Enter')checkLock()">
+    <button class="lock-btn" onclick="checkLock()">Ingresar</button>
+    <div class="lock-error" id="lockError">❌ Clave incorrecta. Intenta de nuevo.</div>
+    <div style="margin-top:16px;"><button onclick="closeLock()" style="background:none;border:none;color:var(--gray);font-size:0.8rem;cursor:pointer;font-family:'Montserrat',sans-serif;">Cancelar</button></div>
+  </div>
+</div>
+<div class="confirm-overlay" id="confirmModal" style="display:none;">
+  <div class="confirm-box">
+    <div class="confirm-icon">🗑️</div>
+    <div class="confirm-title">¿Eliminar inscripción?</div>
+    <div class="confirm-desc" id="confirmDesc">Esta acción no se puede deshacer.</div>
+    <div class="confirm-btns">
+      <button class="btn-delete" style="padding:10px 22px;" onclick="confirmDelete()">Sí, eliminar</button>
+      <button class="btn btn-secondary" onclick="closeConfirm()">Cancelar</button>
+    </div>
+  </div>
+</div>
+<div class="app">
+  <header>
+    <h1>Sistema de Registro<br><span>de Clubes</span></h1>
+    <p>Preinscripción y gestión de participantes</p>
+  </header>
+  <div class="db-status connecting" id="dbStatus"><div class="dot pulse"></div> Conectando a la base de datos...</div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('registro',this)">📋 Nueva Inscripción</button>
+    <button class="tab-btn" onclick="showTab('modificar',this)">✏️ Modificar</button>
+    <button class="tab-btn tab-locked" onclick="requestLock('admin',this)">🛡️ Panel Admin</button>
+    <button class="tab-btn tab-locked" onclick="requestLock('resumen',this)">📊 Resumen</button>
+  </div>
+  <div id="tab-registro" class="panel active">
+    <div class="card">
+      <div class="card-title">Datos del Club</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Nombre del Club</label><input type="text" id="clubNombre" placeholder="Ej: Club Aventureros del Norte"></div>
+        <div class="form-group"><label>Distrito</label><input type="text" id="clubDistrito" placeholder="Ej: Distrito Central"></div>
+        <div class="form-group"><label>Zona</label><input type="text" id="clubZona" placeholder="Ej: Zona Norte"></div>
+        <div class="form-group"><label>Director Responsable</label><input type="text" id="clubDirectorNombre" placeholder="Nombre completo"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Integrantes</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Nombre Completo</label><input type="text" id="memberName" placeholder="Nombre del integrante"></div>
+        <div class="form-group"><label>Tipo de Integrante</label>
+          <select id="memberType">
+            <option value="">-- Seleccionar tipo --</option>
+            <option value="conquistador">Conquistador</option>
+            <option value="guia_mayor">Guías Mayor</option>
+            <option value="visita">Visita</option>
+            <option value="cocinero">Cocinero</option>
+            <option value="director">Director</option>
+            <option value="nino_6_10">Niño/a 6-10 años</option>
+            <option value="nino_menor_6">Niño/a menor de 6 años</option>
+          </select>
+        </div>
+      </div>
+      <div class="btn-row"><button class="btn btn-secondary" onclick="addMember()">+ Agregar Integrante</button></div>
+      <div class="members-list" id="membersList"></div>
+      <div class="total-bar" id="totalBar" style="display:none">
+        <div><div class="total-label">Total a Cancelar</div><div id="memberCount" style="font-size:0.8rem;color:var(--gray);margin-top:3px;"></div></div>
+        <div class="total-amount" id="totalAmount">$0</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">💳 Comprobantes de Pago</div>
+      <p style="font-size:0.83rem;color:var(--gray);margin-bottom:18px;">Agrega uno o varios depósitos. Puedes registrar pagos parciales.</p>
+      <div class="form-grid">
+        <div class="form-group"><label>Monto en Bs</label><input type="number" id="compBsReg" placeholder="0.00" min="0" step="0.01"></div>
+        <div class="form-group"><label>Monto en USD <span style="color:var(--gray);font-weight:400;">(opcional)</span></label><input type="number" id="compUsdReg" placeholder="0.00" min="0" step="0.01"></div>
+        <div class="form-group"><label>Fecha de Depósito</label><input type="date" id="compFechaReg"></div>
+        <div class="form-group"><label>N° de Comprobante</label><input type="text" id="compNumeroReg" placeholder="Ej: 00123456"></div>
+      </div>
+      <div class="btn-row"><button class="btn btn-secondary" onclick="addComprobante()">+ Agregar Depósito</button></div>
+      <div id="comprobantesList"></div>
+      <div id="compTotalBar" style="display:none;margin-top:12px;">
+        <div class="total-bar" style="background:linear-gradient(135deg,#1a4a2e,#1e5c38);">
+          <div><div class="total-label">Total Depositado</div></div>
+          <div style="display:flex;gap:20px;align-items:center;">
+            <span style="font-size:0.9rem;color:#a0e0bf;">Bs <strong id="compTotalBs">0</strong></span>
+            <span style="font-size:1.4rem;font-weight:900;color:#4cd98a;">$ <strong id="compTotalUsd">0</strong></span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="regAlert" class="alert"></div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="btnSubmit" onclick="submitRegistration()">🚀 Enviar Preinscripción</button>
+      <button class="btn btn-secondary" onclick="clearForm()">🗑️ Limpiar</button>
+    </div>
+    <div id="successCode" style="display:none">
+      <div class="code-box">
+        <div style="font-size:0.75rem;letter-spacing:2px;text-transform:uppercase;color:var(--gray);margin-bottom:8px;">Tu Código de Preinscripción</div>
+        <div class="code-value" id="generatedCode">------</div>
+        <div class="code-hint">⚠️ Guarda este código. Lo necesitarás para modificar tu preinscripción antes de ser aprobada.</div>
+      </div>
+    </div>
+  </div>
+  <div id="tab-modificar" class="panel">
+    <div class="card">
+      <div class="card-title">Modificar Preinscripción</div>
+      <p style="font-size:0.85rem;color:var(--gray);margin-bottom:16px;">Ingresa el código para realizar cambios. Solo disponible mientras no haya sido aprobada.</p>
+      <div class="code-search">
+        <input type="text" id="searchCode" placeholder="Ingresa tu código (ej: ABC123)" style="text-transform:uppercase;letter-spacing:3px;font-weight:700;">
+        <button class="btn btn-primary" onclick="searchInscription()">Buscar</button>
+      </div>
+      <div id="modAlert" class="alert" style="margin-top:12px;"></div>
+    </div>
+    <div id="modifyForm" style="display:none">
+      <div class="card">
+        <div class="card-title">Editando Datos del Club</div>
+        <div id="modifyBadge" style="margin-bottom:16px;"></div>
+        <div class="form-grid">
+          <div class="form-group"><label>Nombre del Club</label><input type="text" id="modNombre"></div>
+          <div class="form-group"><label>Distrito</label><input type="text" id="modDistrito"></div>
+          <div class="form-group"><label>Zona</label><input type="text" id="modZona"></div>
+          <div class="form-group"><label>Director Responsable</label><input type="text" id="modDirectorNombre"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Integrantes</div>
+        <div class="form-grid">
+          <div class="form-group"><label>Nombre</label><input type="text" id="modMemberName" placeholder="Nombre"></div>
+          <div class="form-group"><label>Tipo</label>
+            <select id="modMemberType">
+              <option value="">-- Seleccionar tipo --</option>
+              <option value="conquistador">Conquistador</option>
+              <option value="guia_mayor">Guías Mayor</option>
+              <option value="visita">Visita</option>
+              <option value="cocinero">Cocinero</option>
+              <option value="director">Director</option>
+              <option value="nino_6_10">Niño/a 6-10 años</option>
+              <option value="nino_menor_6">Niño/a menor de 6 años</option>
+            </select>
+          </div>
+        </div>
+        <div class="btn-row"><button class="btn btn-secondary" onclick="addModMember()">+ Agregar</button></div>
+        <div class="members-list" id="modMembersList"></div>
+        <div class="total-bar" id="modTotalBar" style="display:none;margin-top:12px;">
+          <div><div class="total-label">Total</div></div>
+          <div class="total-amount" id="modTotalAmount">$0</div>
+        </div>
+      </div>
+      <div id="modSaveAlert" class="alert"></div>
+      <div class="btn-row">
+        <button class="btn btn-success" onclick="saveModification()">💾 Guardar Cambios</button>
+        <button class="btn btn-secondary" onclick="cancelModify()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+  <div id="tab-admin" class="panel">
+    <div class="card">
+      <div class="card-title">Panel de Administración</div>
+      <div id="adminList"><div class="empty">Cargando inscripciones...</div></div>
+    </div>
+  </div>
+  <div id="tab-resumen" class="panel">
+    <div class="card">
+      <div class="card-title">Resumen General de Inscripciones</div>
+      <div class="summary-grid" id="summaryStats"></div>
+      <div id="summaryList"></div>
+    </div>
+  </div>
+</div>
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import{getFirestore,collection,addDoc,doc,updateDoc,deleteDoc,onSnapshot,query,orderBy}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+const firebaseConfig={apiKey:"AIzaSyAbtgSbt14PYod82X0qmdb6cq3-2ZDk3Vw",authDomain:"registro-clubes.firebaseapp.com",projectId:"registro-clubes",storageBucket:"registro-clubes.firebasestorage.app",messagingSenderId:"28603044148",appId:"1:28603044148:web:4404555f8bf13969e75561"};
+const fbApp=initializeApp(firebaseConfig);
+const db=getFirestore(fbApp);
+const colRef=collection(db,'inscripciones');
+const dbStatus=document.getElementById('dbStatus');
+function setStatus(s){if(s==='connected'){dbStatus.className='db-status connected';dbStatus.innerHTML='<div class="dot"></div> Conectado · datos en tiempo real';}else if(s==='error'){dbStatus.className='db-status error';dbStatus.innerHTML='<div class="dot"></div> Error de conexión';}else{dbStatus.className='db-status connecting';dbStatus.innerHTML='<div class="dot pulse"></div> Conectando...';}}
+let inscriptions=[];
+onSnapshot(query(colRef,orderBy('fechaTs','desc')),snap=>{setStatus('connected');inscriptions=snap.docs.map(d=>({_id:d.id,...d.data()}));if(document.getElementById('tab-admin').classList.contains('active'))renderAdmin();if(document.getElementById('tab-resumen').classList.contains('active'))renderResumen();},err=>{setStatus('error');console.error(err);});
+const ADMIN_PASS='Am4d0.26';
+let adminUnlocked=false,pendingTab=null,pendingBtn=null;
+const TYPES={conquistador:{label:'Conquistador',base:20},guia_mayor:{label:'Guías Mayor',base:20},visita:{label:'Visita',base:10},cocinero:{label:'Cocinero',base:null},director:{label:'Director',base:null},nino_6_10:{label:'Niño/a 6-10',base:10},nino_menor_6:{label:'Niño/a <6',base:0}};
+let currentMembers=[],currentComprobantes=[],modifyingId=null,modMembers=[],deleteTargetId=null;
+function calcCost(members){let cc=0,dc=0;return members.map(m=>{let cost=0;if(m.type==='cocinero'){cc++;cost=cc<=2?0:10;}else if(m.type==='director'){dc++;cost=dc<=1?0:10;}else{cost=TYPES[m.type]?.base??0;}return{...m,cost};});}
+<script>
+// ── API (Netlify Functions) ──
+const API = {
+  async getAll() {
+    const r = await fetch('/.netlify/functions/get-inscriptions');
+    if (!r.ok) throw new Error(await r.text());
+    return r.json();
+  },
+  async save(data) {
+    const r = await fetch('/.netlify/functions/save-inscription', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
+    if (!r.ok) throw new Error(await r.text());
+    return r.json();
+  },
+  async update(id, fields) {
+    const r = await fetch('/.netlify/functions/update-inscription', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id, ...fields}) });
+    if (!r.ok) throw new Error(await r.text());
+    return r.json();
+  },
+  async delete(id) {
+    const r = await fetch('/.netlify/functions/delete-inscription', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id}) });
+    if (!r.ok) throw new Error(await r.text());
+    return r.json();
+  }
+};
+
+// ── STATE ──
+const ADMIN_PASS='Am4d0.26';
+let inscriptions=[], adminUnlocked=false, pendingTab=null, pendingBtn=null;
+let currentMembers=[], currentComprobantes=[], modifyingId=null, modMembers=[], deleteTargetId=null;
+const TYPES={conquistador:{label:'Conquistador',base:20},guia_mayor:{label:'Guías Mayor',base:20},visita:{label:'Visita',base:10},cocinero:{label:'Cocinero',base:null},director:{label:'Director',base:null},nino_6_10:{label:'Niño/a 6-10',base:10},nino_menor_6:{label:'Niño/a <6',base:0}};
+
+// ── SYNC STATUS ──
+function setSyncStatus(state, text) {
+  const el=document.getElementById('dbStatus');
+  el.className='db-status '+state;
+  el.innerHTML=`<div class="dot${state==='connecting'?' pulse':''}"></div> ${text}`;
+}
+
+// ── LOAD DATA ──
+async function loadData() {
+  setSyncStatus('connecting','Conectando...');
+  try {
+    inscriptions = await API.getAll();
+    setSyncStatus('connected', `En línea · ${inscriptions.length} inscripción(es)`);
+    if (document.getElementById('tab-admin').classList.contains('active')) renderAdmin();
+    if (document.getElementById('tab-resumen').classList.contains('active')) renderResumen();
+  } catch(e) {
+    setSyncStatus('error','⚠️ Error de conexión');
+    console.error(e);
+  }
+}
+loadData();
+// Poll every 15s to keep data fresh across users
+setInterval(loadData, 15000);
+
+// ── HELPERS ──
+function calcCost(members){let cc=0,dc=0;return members.map(m=>{let cost=0;if(m.type==='cocinero'){cc++;cost=cc<=2?0:10;}else if(m.type==='director'){dc++;cost=dc<=1?0:10;}else{cost=TYPES[m.type]?.base??0;}return{...m,cost};});}
+function totalCost(m){return m.reduce((s,x)=>s+(x.cost||0),0);}
+function generateCode(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';return Array.from({length:6},()=>c[Math.floor(Math.random()*c.length)]).join('');}
+function showAlert(id,msg,type){const el=document.getElementById(id);el.textContent=msg;el.className=`alert alert-${type} show`;setTimeout(()=>el.className='alert',5000);}
+
+// ── TABS ──
+window.showTab=function(tab,btn){document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));document.getElementById('tab-'+tab).classList.add('active');btn.classList.add('active');if(tab==='admin'){loadData().then(renderAdmin);}if(tab==='resumen'){loadData().then(renderResumen);}};
+
+// ── LOCK ──
+window.requestLock=function(tab,btn){if(adminUnlocked){showTab(tab,btn);return;}pendingTab=tab;pendingBtn=btn;document.getElementById('lockSubtitle').textContent=tab==='admin'?'Panel de Administración':'Resumen General';document.getElementById('lockInput').value='';document.getElementById('lockError').className='lock-error';document.getElementById('lockOverlay').style.display='flex';setTimeout(()=>document.getElementById('lockInput').focus(),100);};
+window.checkLock=function(){if(document.getElementById('lockInput').value===ADMIN_PASS){adminUnlocked=true;document.getElementById('lockOverlay').style.display='none';if(pendingTab&&pendingBtn)showTab(pendingTab,pendingBtn);}else{document.getElementById('lockError').className='lock-error show';document.getElementById('lockInput').value='';document.getElementById('lockInput').focus();}};
+window.closeLock=function(){document.getElementById('lockOverlay').style.display='none';pendingTab=null;pendingBtn=null;};
+
+// ── MEMBERS ──
+function renderMembersList(members,listId,removeFn){const list=document.getElementById(listId);if(!members.length){list.innerHTML='';return;}const wc=calcCost(members);list.innerHTML=wc.map((m,i)=>`<div class="member-row"><span style="font-weight:600;font-size:0.9rem;">${m.name}</span><span style="font-size:0.82rem;color:var(--gray);">${TYPES[m.type]?.label||m.type}</span><span class="member-cost">${m.cost===0?'Gratis':'$'+m.cost}</span><button class="btn-remove" onclick="${removeFn}(${i})">✕</button></div>`).join('');}
+function updateTotalBar(members,barId,amountId,countId){const bar=document.getElementById(barId);if(members.length){bar.style.display='flex';const wc=calcCost(members);document.getElementById(amountId).textContent='$'+totalCost(wc);if(countId)document.getElementById(countId).textContent=members.length+' integrante(s)';}else{bar.style.display='none';}}
+window.addMember=function(){const name=document.getElementById('memberName').value.trim();const type=document.getElementById('memberType').value;if(!name||!type){showAlert('regAlert','Completa el nombre y tipo.','error');return;}currentMembers.push({name,type});document.getElementById('memberName').value='';document.getElementById('memberType').value='';renderMembersList(currentMembers,'membersList','removeMember');updateTotalBar(currentMembers,'totalBar','totalAmount','memberCount');};
+window.removeMember=function(i){currentMembers.splice(i,1);renderMembersList(currentMembers,'membersList','removeMember');updateTotalBar(currentMembers,'totalBar','totalAmount','memberCount');};
+
+// ── COMPROBANTES ──
+window.addComprobante=function(){const bs=document.getElementById('compBsReg').value.trim();const usd=document.getElementById('compUsdReg').value.trim();const fechaISO=document.getElementById('compFechaReg').value;const numero=document.getElementById('compNumeroReg').value.trim();if(!bs||!fechaISO||!numero){showAlert('regAlert','⚠️ Bs, fecha y N° de comprobante son obligatorios.','error');return;}const fecha=new Date(fechaISO+'T12:00:00').toLocaleDateString('es-ES');currentComprobantes.push({bs:parseFloat(bs),usd:usd?parseFloat(usd):null,fechaISO,fecha,numero});['compBsReg','compUsdReg','compNumeroReg'].forEach(id=>document.getElementById(id).value='');document.getElementById('compFechaReg').value='';renderComprobantes();};
+window.removeComprobante=function(i){currentComprobantes.splice(i,1);renderComprobantes();};
+function renderComprobantes(){const list=document.getElementById('comprobantesList');const bar=document.getElementById('compTotalBar');if(!currentComprobantes.length){list.innerHTML='';bar.style.display='none';return;}list.innerHTML=currentComprobantes.map((c,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);flex-wrap:nowrap;overflow-x:auto;"><div style="flex:1;min-width:70px;background:rgba(255,255,255,0.04);border-radius:8px;padding:6px 10px;"><div style="font-size:0.62rem;color:var(--gray);text-transform:uppercase;">Bs</div><div style="font-weight:700;font-size:0.88rem;white-space:nowrap;">Bs ${c.bs}</div></div><div style="flex:1;min-width:70px;background:rgba(255,255,255,0.04);border-radius:8px;padding:6px 10px;"><div style="font-size:0.62rem;color:var(--gray);text-transform:uppercase;">USD</div><div style="font-weight:700;color:var(--gold2);font-size:0.88rem;white-space:nowrap;">${c.usd!==null?'$'+c.usd:'—'}</div></div><div style="flex:1;min-width:80px;background:rgba(255,255,255,0.04);border-radius:8px;padding:6px 10px;"><div style="font-size:0.62rem;color:var(--gray);text-transform:uppercase;">Fecha</div><div style="font-weight:600;font-size:0.88rem;white-space:nowrap;">${c.fecha}</div></div><div style="flex:1;min-width:90px;background:rgba(255,255,255,0.04);border-radius:8px;padding:6px 10px;"><div style="font-size:0.62rem;color:var(--gray);text-transform:uppercase;">N° Comp.</div><div style="font-weight:600;font-size:0.88rem;white-space:nowrap;">#${c.numero}</div></div><button class="btn-remove" style="flex-shrink:0;" onclick="removeComprobante(${i})">✕</button></div>`).join('');const tBs=currentComprobantes.reduce((s,c)=>s+c.bs,0);const tUsd=currentComprobantes.filter(c=>c.usd!==null).reduce((s,c)=>s+c.usd,0);document.getElementById('compTotalBs').textContent=tBs.toFixed(2);document.getElementById('compTotalUsd').textContent=tUsd>0?tUsd.toFixed(2):'—';bar.style.display='block';}
+
+// ── SUBMIT ──
+window.submitRegistration=async function(){const nombre=document.getElementById('clubNombre').value.trim();const distrito=document.getElementById('clubDistrito').value.trim();const zona=document.getElementById('clubZona').value.trim();const directorNombre=document.getElementById('clubDirectorNombre').value.trim();if(!nombre||!distrito||!zona||!directorNombre){showAlert('regAlert','⚠️ Completa todos los datos del club.','error');return;}if(!currentMembers.length){showAlert('regAlert','⚠️ Agrega al menos un integrante.','error');return;}const btn=document.getElementById('btnSubmit');btn.disabled=true;btn.textContent='⏳ Guardando...';try{const code=generateCode();const withCost=calcCost(currentMembers);await API.save({code,nombre,distrito,zona,directorNombre,members:withCost,total:totalCost(withCost),status:'pendiente',fecha:new Date().toLocaleDateString('es-ES'),fechaTs:Date.now(),comprobantes:[...currentComprobantes]});document.getElementById('generatedCode').textContent=code;document.getElementById('successCode').style.display='block';showAlert('regAlert','✅ Preinscripción enviada y guardada exitosamente.','success');clearFormData();await loadData();}catch(e){showAlert('regAlert','❌ Error al guardar. Verifica tu conexión.','error');console.error(e);}btn.disabled=false;btn.textContent='🚀 Enviar Preinscripción';};
+function clearFormData(){currentMembers=[];currentComprobantes=[];document.getElementById('membersList').innerHTML='';document.getElementById('comprobantesList').innerHTML='';document.getElementById('compTotalBar').style.display='none';document.getElementById('totalBar').style.display='none';['clubNombre','clubDistrito','clubZona','clubDirectorNombre','memberName','compBsReg','compUsdReg','compNumeroReg'].forEach(id=>document.getElementById(id).value='');document.getElementById('memberType').value='';document.getElementById('compFechaReg').value='';}
+window.clearForm=function(){clearFormData();document.getElementById('successCode').style.display='none';};
+
+// ── MODIFICAR ──
+window.searchInscription=function(){const code=document.getElementById('searchCode').value.trim().toUpperCase();const insc=inscriptions.find(i=>i.code===code);if(!insc){showAlert('modAlert','❌ Código no encontrado.','error');document.getElementById('modifyForm').style.display='none';return;}if(insc.status==='aprobada'){showAlert('modAlert','🔒 Esta preinscripción ya fue aprobada.','error');document.getElementById('modifyForm').style.display='none';return;}document.getElementById('modAlert').className='alert';modifyingId=insc._id;modMembers=insc.members.map(m=>({name:m.name,type:m.type}));document.getElementById('modNombre').value=insc.nombre;document.getElementById('modDistrito').value=insc.distrito;document.getElementById('modZona').value=insc.zona;document.getElementById('modDirectorNombre').value=insc.directorNombre||'';const comps=insc.comprobantes||[];const compHtml=comps.length?`<div style="margin-bottom:16px;"><div style="font-size:0.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gold);margin-bottom:10px;">Comprobantes Registrados (${comps.length})</div>${comps.map(c=>`<div style="display:flex;gap:8px;padding:8px;background:rgba(201,168,76,0.05);border-radius:8px;margin-bottom:6px;overflow-x:auto;"><div style="flex:1;min-width:60px;"><div style="font-size:0.65rem;color:var(--gray);">Bs</div><div style="font-weight:700;">Bs ${c.bs}</div></div><div style="flex:1;min-width:60px;"><div style="font-size:0.65rem;color:var(--gray);">USD</div><div style="font-weight:700;color:var(--gold2);">${c.usd!==null?'$'+c.usd:'—'}</div></div><div style="flex:1;min-width:70px;"><div style="font-size:0.65rem;color:var(--gray);">Fecha</div><div style="font-size:0.82rem;">${c.fecha}</div></div><div style="flex:1;min-width:80px;"><div style="font-size:0.65rem;color:var(--gray);">N°</div><div style="font-size:0.82rem;">#${c.numero}</div></div></div>`).join('')}</div>`:`<div style="font-size:0.82rem;color:var(--gray);margin-bottom:16px;padding:12px;background:rgba(255,255,255,0.03);border-radius:8px;">📎 Sin comprobantes registrados.</div>`;document.getElementById('modifyBadge').innerHTML=`<span class="badge badge-pending">PENDIENTE</span>&nbsp;<span style="font-size:0.8rem;color:var(--gray);">Código: <strong style="color:var(--gold2);">${code}</strong></span><div style="margin-top:12px;">${compHtml}</div>`;renderModMembers();document.getElementById('modifyForm').style.display='block';};
+function renderModMembers(){renderMembersList(modMembers,'modMembersList','removeModMember');updateTotalBar(modMembers,'modTotalBar','modTotalAmount',null);}
+window.addModMember=function(){const name=document.getElementById('modMemberName').value.trim();const type=document.getElementById('modMemberType').value;if(!name||!type)return;modMembers.push({name,type});document.getElementById('modMemberName').value='';document.getElementById('modMemberType').value='';renderModMembers();};
+window.removeModMember=function(i){modMembers.splice(i,1);renderModMembers();};
+window.saveModification=async function(){if(!modifyingId)return;const withCost=calcCost(modMembers);try{await API.update(modifyingId,{nombre:document.getElementById('modNombre').value.trim(),distrito:document.getElementById('modDistrito').value.trim(),zona:document.getElementById('modZona').value.trim(),directorNombre:document.getElementById('modDirectorNombre').value.trim(),members:withCost,total:totalCost(withCost)});showAlert('modSaveAlert','✅ Cambios guardados correctamente.','success');await loadData();}catch(e){showAlert('modSaveAlert','❌ Error al guardar.','error');}};
+window.cancelModify=function(){modifyingId=null;modMembers=[];document.getElementById('modifyForm').style.display='none';document.getElementById('searchCode').value='';};
+
+// ── ADMIN ──
+function renderAdmin(){const list=document.getElementById('adminList');if(!inscriptions.length){list.innerHTML='<div class="empty">No hay preinscripciones registradas aún.</div>';return;}list.innerHTML=inscriptions.map(insc=>{const comps=insc.comprobantes||[];const compSection=comps.length?`<div style="margin:12px 0;background:rgba(26,122,74,0.08);border:1px solid rgba(26,122,74,0.25);border-radius:10px;padding:14px;"><div style="font-size:0.7rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#4cd98a;margin-bottom:10px;">✅ Comprobantes (${comps.length})</div>${comps.map((c,ci)=>`<div style="display:flex;gap:8px;padding:8px 0;${ci<comps.length-1?'border-bottom:1px solid rgba(255,255,255,0.06);':''}overflow-x:auto;"><div style="flex:1;min-width:70px;"><div style="font-size:0.65rem;color:var(--gray);text-transform:uppercase;">Bs</div><div style="font-weight:700;">Bs ${c.bs}</div></div><div style="flex:1;min-width:70px;"><div style="font-size:0.65rem;color:var(--gray);text-transform:uppercase;">USD</div><div style="font-weight:700;color:var(--gold2);">${c.usd!==null?'$'+c.usd:'—'}</div></div><div style="flex:1;min-width:80px;"><div style="font-size:0.65rem;color:var(--gray);text-transform:uppercase;">Fecha</div><div style="font-size:0.82rem;">${c.fecha}</div></div><div style="flex:1;min-width:90px;"><div style="font-size:0.65rem;color:var(--gray);text-transform:uppercase;">N° Comp.</div><div style="font-size:0.82rem;">#${c.numero}</div></div></div>`).join('')}<div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(26,122,74,0.3);display:flex;gap:20px;"><span style="font-size:0.8rem;color:#a0e0bf;">Total Bs: <strong>Bs ${comps.reduce((s,c)=>s+c.bs,0).toFixed(2)}</strong></span><span style="font-size:0.8rem;color:#4cd98a;font-weight:700;">Total USD: <strong>$${comps.filter(c=>c.usd!==null).reduce((s,c)=>s+c.usd,0).toFixed(2)}</strong></span></div></div>`:`<div style="margin:10px 0;padding:10px 14px;background:rgba(192,57,43,0.08);border:1px solid rgba(192,57,43,0.2);border-radius:8px;font-size:0.8rem;color:#e07070;">⚠️ Sin comprobantes de pago</div>`;return`<div class="inscription-card"><div class="insc-header"><div><div class="insc-title">🏕️ ${insc.nombre}</div><div class="insc-meta">📍 ${insc.distrito} — ${insc.zona} &nbsp;|&nbsp; 👤 ${insc.directorNombre||'—'} &nbsp;|&nbsp; 📅 ${insc.fecha} &nbsp;|&nbsp; Código: <strong style="color:var(--gold2)">${insc.code}</strong></div></div><span class="badge ${insc.status==='aprobada'?'badge-approved':'badge-pending'}">${insc.status.toUpperCase()}</span></div><div class="insc-members">${insc.members.map(m=>`<span class="member-chip">${m.name} <span style="color:var(--gray)">(${TYPES[m.type]?.label||m.type}) · ${m.cost===0?'Gratis':'$'+m.cost}</span></span>`).join('')}</div>${compSection}<div class="insc-footer"><div class="insc-amount">💰 Total: $${insc.total} · ${insc.members.length} integrante(s)</div><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn-approve" onclick="approveInscription('${insc._id}')" ${insc.status==='aprobada'?'disabled':''}>${insc.status==='aprobada'?'✅ Aprobada':'✅ Aprobar'}</button><button class="btn-delete" onclick="askDelete('${insc._id}','${insc.nombre.replace(/'/g,"\\'")}')">🗑️ Eliminar</button></div></div></div>`;}).join('');}
+window.approveInscription=async function(id){try{await API.update(id,{status:'aprobada'});await loadData();renderAdmin();}catch(e){console.error(e);}};
+
+// ── DELETE ──
+window.askDelete=function(id,nombre){deleteTargetId=id;document.getElementById('confirmDesc').textContent=`Eliminarás la inscripción de "${nombre}". Esta acción no se puede deshacer.`;document.getElementById('confirmModal').style.display='flex';};
+window.confirmDelete=async function(){if(deleteTargetId){try{await API.delete(deleteTargetId);await loadData();renderAdmin();}catch(e){console.error(e);}deleteTargetId=null;}closeConfirm();};
+window.closeConfirm=function(){document.getElementById('confirmModal').style.display='none';};
+
+// ── RESUMEN ──
+function renderResumen(){const total=inscriptions.length;const aprobadas=inscriptions.filter(i=>i.status==='aprobada').length;const totalRecaudar=inscriptions.reduce((s,i)=>s+i.total,0);const totalIntegrantes=inscriptions.reduce((s,i)=>s+i.members.length,0);document.getElementById('summaryStats').innerHTML=`<div class="stat-card"><div class="stat-value">${total}</div><div class="stat-label">Total Clubes</div></div><div class="stat-card"><div class="stat-value" style="color:#4cd98a">${aprobadas}</div><div class="stat-label">Aprobadas</div></div><div class="stat-card"><div class="stat-value" style="color:var(--gold2)">${total-aprobadas}</div><div class="stat-label">Pendientes</div></div><div class="stat-card"><div class="stat-value">${totalIntegrantes}</div><div class="stat-label">Integrantes</div></div><div class="stat-card"><div class="stat-value">$${totalRecaudar}</div><div class="stat-label">Total a Recaudar</div></div>`;const list=document.getElementById('summaryList');if(!inscriptions.length){list.innerHTML='<div class="empty">No hay inscripciones aún.</div>';return;}list.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:0.82rem;"><thead><tr style="border-bottom:1px solid rgba(201,168,76,0.3);"><th style="padding:10px 8px;text-align:left;color:var(--gold);font-size:0.72rem;letter-spacing:1px;text-transform:uppercase;">Club</th><th style="padding:10px 8px;text-align:left;color:var(--gold);font-size:0.72rem;letter-spacing:1px;text-transform:uppercase;">Distrito/Zona</th><th style="padding:10px 8px;text-align:center;color:var(--gold);font-size:0.72rem;letter-spacing:1px;text-transform:uppercase;">Integr.</th><th style="padding:10px 8px;text-align:right;color:var(--gold);font-size:0.72rem;letter-spacing:1px;text-transform:uppercase;">Total</th><th style="padding:10px 8px;text-align:center;color:var(--gold);font-size:0.72rem;letter-spacing:1px;text-transform:uppercase;">Estado</th><th style="padding:10px 8px;text-align:center;color:var(--gold);font-size:0.72rem;letter-spacing:1px;text-transform:uppercase;">Código</th></tr></thead><tbody>${inscriptions.map(insc=>`<tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:10px 8px;font-weight:600;color:var(--white)">${insc.nombre}</td><td style="padding:10px 8px;color:var(--gray)">${insc.distrito} / ${insc.zona}</td><td style="padding:10px 8px;text-align:center">${insc.members.length}</td><td style="padding:10px 8px;text-align:right;font-weight:700;color:var(--gold2)">$${insc.total}</td><td style="padding:10px 8px;text-align:center"><span class="badge ${insc.status==='aprobada'?'badge-approved':'badge-pending'}">${insc.status}</span></td><td style="padding:10px 8px;text-align:center;font-weight:700;letter-spacing:2px;color:var(--gold2)">${insc.code}</td></tr>`).join('')}</tbody></table>`;}
+</script>
+</body>
+</html>

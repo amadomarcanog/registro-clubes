@@ -1,0 +1,9 @@
+VARIABLE DE ENTORNO REQUERIDA EN NETLIFY
+=========================================
+
+Ve a: Netlify → Tu sitio → Site configuration → Environment variables → Add variable
+
+Nombre:  DATABASE_URL
+Valor:   postgresql://neondb_owner:npg_3Tp2jwxIgReL@ep-broad-breeze-ae35c844-pooler.c-2.us-east-2.aws.neon.tech/neondb?channel_binding=require&sslmode=require
+
+Luego redeploy el sitio para que tome efecto.
