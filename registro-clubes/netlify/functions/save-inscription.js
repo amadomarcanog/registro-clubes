@@ -1,18 +1,15 @@
-import { neon } from "@neondatabase/serverless";
+const { neon } = require("@neondatabase/serverless");
 
-export default async (req, context) => {
+exports.handler = async (event) => {
   const headers = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type",
     "Content-Type": "application/json",
   };
-
-  if (req.method === "OPTIONS") return new Response("", { status: 200, headers });
-
+  if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers, body: "" };
   try {
     const sql = neon(process.env.DATABASE_URL);
-    const d = await req.json();
-
+    const d = JSON.parse(event.body);
     const rows = await sql`
       INSERT INTO inscriptions (code, nombre, distrito, zona, director_nombre, members, total, status, fecha, fecha_ts, comprobantes)
       VALUES (${d.code}, ${d.nombre}, ${d.distrito}, ${d.zona}, ${d.directorNombre},
@@ -20,11 +17,9 @@ export default async (req, context) => {
               ${d.fechaTs || Date.now()}, ${JSON.stringify(d.comprobantes || [])})
       RETURNING id
     `;
-    return new Response(JSON.stringify({ id: rows[0].id }), { status: 200, headers });
+    return { statusCode: 200, headers, body: JSON.stringify({ id: rows[0].id }) };
   } catch (e) {
     console.error(e);
-    return new Response(JSON.stringify({ error: e.message }), { status: 500, headers });
+    return { statusCode: 500, headers, body: JSON.stringify({ error: e.message }) };
   }
 };
-
-export const config = { path: "/.netlify/functions/save-inscription" };
