@@ -1,0 +1,7 @@
+[build]
+  base = "registro-clubes"
+  publish = "registro-clubes"
+  functions = "registro-clubes/netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "18"
